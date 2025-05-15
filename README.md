@@ -9,8 +9,9 @@ Created using ChatGPT.
 4. Next, add code so that when clicking inside a hexagon, that hexagon gets a 5 pixel black outline.
 5. Make it a 5 pixel outline instead.
 6. Make the highlight persist across animation updates and toggle off when clicked again. And re-draw that outlined hexagon again after the whole grid is drawn, so it will not be obscured by nearby hexagons.
+7. Multiple hexagons to be selectable. Add a glowing effect on selected hexagons.
 
-<img width="596" alt="image" src="https://github.com/user-attachments/assets/b123b8a0-f872-453c-a917-ab6348f9dfb2" />
+<img width="596" alt="image" src="https://github.com/user-attachments/assets/b2d14522-1626-4680-aa2c-f27f04d68415" />
 
 ### Notes:
 You can't see it in the static screen shot, but it is updating with random colors once per second.
