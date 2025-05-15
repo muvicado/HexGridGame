@@ -17,6 +17,7 @@ class HexagonScene: SKScene {
     private let buttonTopOffset: CGFloat = 150  // Distance from top
 
     private var selectedHexes: Set<SKShapeNode> = []
+    private var isDragging = false
 
     init(updater: HexagonGridUpdater) {
         self.updater = updater
@@ -48,7 +49,6 @@ class HexagonScene: SKScene {
         let dx = hexSize * 3/2
         let dy = hexSize * sqrt(3)
 
-        // Remove old hexes
         for node in hexNodes {
             node.removeFromParent()
         }
@@ -70,13 +70,10 @@ class HexagonScene: SKScene {
             }
         }
 
-        // Re-apply styling for selected hexes
         for hex in selectedHexes {
-            if hexNodes.contains(hex) {
-                applySelectionEffect(to: hex)
-                hex.removeFromParent()
-                addChild(hex)
-            }
+            applySelectionEffect(to: hex)
+            hex.removeFromParent()
+            addChild(hex)
         }
     }
 
@@ -84,10 +81,26 @@ class HexagonScene: SKScene {
         toggleButton = SKLabelNode(text: "Pause")
         toggleButton.fontName = "Helvetica"
         toggleButton.fontSize = 24
-        toggleButton.fontColor = SKColor(red: 0.96, green: 0.89, blue: 0.76, alpha: 1.0) // Beige
+        toggleButton.fontColor = SKColor(red: 0.96, green: 0.89, blue: 0.76, alpha: 1.0)
         toggleButton.position = CGPoint(x: size.width / 2, y: size.height - buttonTopOffset)
         toggleButton.name = "toggleButton"
         addChild(toggleButton)
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        isDragging = true
+        deselectAllHexagons()
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+
+        for node in nodes(at: location) {
+            if let hex = node as? SKShapeNode, hex.name == "hexagon" {
+                selectHexagon(hex)
+            }
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -98,46 +111,63 @@ class HexagonScene: SKScene {
         if touchedNodes.contains(where: { $0.name == "toggleButton" }) {
             isRunning.toggle()
             toggleButton.text = isRunning ? "Pause" : "Resume"
-            return
-        }
-
-        for node in touchedNodes {
-            if let hex = node as? SKShapeNode, hex.name == "hexagon" {
-                toggleHexagonSelection(hex)
-                break
+        } else if !isDragging {
+            // Regular tap behavior if not dragging
+            for node in touchedNodes {
+                if let hex = node as? SKShapeNode, hex.name == "hexagon" {
+                    toggleHexagonSelection(hex)
+                    break
+                }
             }
         }
+
+        isDragging = false
+    }
+
+    func deselectAllHexagons() {
+        for hex in selectedHexes {
+            hex.removeAllActions()
+            hex.lineWidth = 1.5
+            hex.strokeColor = .white
+        }
+        selectedHexes.removeAll()
     }
 
     func toggleHexagonSelection(_ hex: SKShapeNode) {
         if selectedHexes.contains(hex) {
-            // Deselect
-            selectedHexes.remove(hex)
-            hex.removeAllActions()
-            hex.lineWidth = 1.5
-            hex.strokeColor = .white
+            deselectHexagon(hex)
         } else {
-            // Select
-            selectedHexes.insert(hex)
-            applySelectionEffect(to: hex)
+            selectHexagon(hex)
         }
+    }
 
-        // Bring all selected to front
-        for hex in selectedHexes {
-            hex.removeFromParent()
-            addChild(hex)
-        }
+    func selectHexagon(_ hex: SKShapeNode) {
+        guard !selectedHexes.contains(hex) else { return }
+
+        selectedHexes.insert(hex)
+        applySelectionEffect(to: hex)
+        hex.removeFromParent()
+        addChild(hex)
+    }
+
+    func deselectHexagon(_ hex: SKShapeNode) {
+        selectedHexes.remove(hex)
+        hex.removeAllActions()
+        hex.lineWidth = 1.5
+        hex.strokeColor = .white
     }
 
     func applySelectionEffect(to hex: SKShapeNode) {
         hex.lineWidth = 5.0
         hex.strokeColor = .black
 
-        let glow = SKAction.sequence([
-            SKAction.fadeAlpha(to: 1.0, duration: 0.1),
-            SKAction.fadeAlpha(to: 0.85, duration: 0.4)
-        ])
-        hex.run(SKAction.repeatForever(glow), withKey: "glow")
+        if hex.action(forKey: "glow") == nil {
+            let glow = SKAction.sequence([
+                SKAction.fadeAlpha(to: 1.0, duration: 0.1),
+                SKAction.fadeAlpha(to: 0.85, duration: 0.4)
+            ])
+            hex.run(SKAction.repeatForever(glow), withKey: "glow")
+        }
     }
 
     func updateHexColors() {
