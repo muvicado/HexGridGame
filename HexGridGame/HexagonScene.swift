@@ -12,6 +12,8 @@ class HexagonScene: SKScene {
     private var cancellable: AnyCancellable?
     private var hexNodes: [SKShapeNode] = []
     private let updater: HexagonGridUpdater
+    private var isRunning = true
+    private var toggleButton: SKLabelNode!
 
     init(updater: HexagonGridUpdater) {
         self.updater = updater
@@ -25,11 +27,14 @@ class HexagonScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .black
         drawHexGrid()
+        setupToggleButton()
 
         cancellable = updater.$tick
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
-                self?.updateHexColors()
+                if self?.isRunning == true {
+                    self?.updateHexColors()
+                }
             }
     }
 
@@ -56,6 +61,27 @@ class HexagonScene: SKScene {
         }
     }
 
+    func setupToggleButton() {
+        toggleButton = SKLabelNode(text: "Pause")
+        toggleButton.fontName = "Helvetica-Bold"
+        toggleButton.fontSize = 24
+        toggleButton.fontColor = .white
+        toggleButton.position = CGPoint(x: size.width / 2, y: size.height - 150)
+        toggleButton.name = "toggleButton"
+        addChild(toggleButton)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        let nodesAtPoint = nodes(at: location)
+
+        if nodesAtPoint.contains(where: { $0.name == "toggleButton" }) {
+            isRunning.toggle()
+            toggleButton.text = isRunning ? "Pause" : "Resume"
+        }
+    }
+
     func updateHexColors() {
         for hex in hexNodes {
             hex.fillColor = .init(hue: CGFloat.random(in: 0...1), saturation: 0.8, brightness: 0.9, alpha: 1.0)
@@ -78,3 +104,4 @@ class HexagonScene: SKScene {
         return path.cgPath
     }
 }
+
