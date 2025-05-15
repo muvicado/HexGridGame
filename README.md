@@ -8,6 +8,8 @@ The main view could be called LobbyView. It would display a button that presents
 
 2. "Now lets add a button to HexagonScene that, when clicked, will stop or start the animation (disable/enable the timer)"
 
+3. Style the button as beige color and a non-bold font.
+
 <img width="596" alt="image" src="https://github.com/user-attachments/assets/b123b8a0-f872-453c-a917-ab6348f9dfb2" />
 
 ### Notes:
