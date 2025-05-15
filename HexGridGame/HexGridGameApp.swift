@@ -11,7 +11,8 @@ import SwiftUI
 struct HexGridGameApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            //ContentView()
+            LobbyView()
         }
     }
 }
