@@ -16,7 +16,7 @@ class HexagonScene: SKScene {
     private var toggleButton: SKLabelNode!
     private let buttonTopOffset: CGFloat = 150  // Distance from top
 
-    private var selectedHex: SKShapeNode?
+    private var selectedHexes: Set<SKShapeNode> = []
 
     init(updater: HexagonGridUpdater) {
         self.updater = updater
@@ -70,10 +70,13 @@ class HexagonScene: SKScene {
             }
         }
 
-        // Re-add selected hex last to bring it visually on top
-        if let selected = selectedHex, hexNodes.contains(selected) {
-            selected.removeFromParent()
-            addChild(selected)
+        // Re-apply styling for selected hexes
+        for hex in selectedHexes {
+            if hexNodes.contains(hex) {
+                applySelectionEffect(to: hex)
+                hex.removeFromParent()
+                addChild(hex)
+            }
         }
     }
 
@@ -107,25 +110,34 @@ class HexagonScene: SKScene {
     }
 
     func toggleHexagonSelection(_ hex: SKShapeNode) {
-        if selectedHex == hex {
+        if selectedHexes.contains(hex) {
             // Deselect
+            selectedHexes.remove(hex)
+            hex.removeAllActions()
             hex.lineWidth = 1.5
             hex.strokeColor = .white
-            selectedHex = nil
         } else {
-            // Deselect previous
-            selectedHex?.lineWidth = 1.5
-            selectedHex?.strokeColor = .white
+            // Select
+            selectedHexes.insert(hex)
+            applySelectionEffect(to: hex)
+        }
 
-            // Highlight new
-            hex.lineWidth = 5.0
-            hex.strokeColor = .black
-            selectedHex = hex
-
-            // Bring selected to top
+        // Bring all selected to front
+        for hex in selectedHexes {
             hex.removeFromParent()
             addChild(hex)
         }
+    }
+
+    func applySelectionEffect(to hex: SKShapeNode) {
+        hex.lineWidth = 5.0
+        hex.strokeColor = .black
+
+        let glow = SKAction.sequence([
+            SKAction.fadeAlpha(to: 1.0, duration: 0.1),
+            SKAction.fadeAlpha(to: 0.85, duration: 0.4)
+        ])
+        hex.run(SKAction.repeatForever(glow), withKey: "glow")
     }
 
     func updateHexColors() {
@@ -133,12 +145,10 @@ class HexagonScene: SKScene {
             hex.fillColor = .init(hue: CGFloat.random(in: 0...1), saturation: 0.8, brightness: 0.9, alpha: 1.0)
         }
 
-        // Re-apply highlight styling (in case lineWidth/strokeColor were overridden)
-        if let selected = selectedHex {
-            selected.lineWidth = 5.0
-            selected.strokeColor = .black
-            selected.removeFromParent()
-            addChild(selected)
+        for hex in selectedHexes {
+            applySelectionEffect(to: hex)
+            hex.removeFromParent()
+            addChild(hex)
         }
     }
 
