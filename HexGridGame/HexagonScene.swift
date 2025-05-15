@@ -14,6 +14,9 @@ class HexagonScene: SKScene {
     private let updater: HexagonGridUpdater
     private var isRunning = true
     private var toggleButton: SKLabelNode!
+    private let buttonTopOffset: CGFloat = 150  // Distance from top
+
+    private var selectedHex: SKShapeNode?
 
     init(updater: HexagonGridUpdater) {
         self.updater = updater
@@ -25,7 +28,7 @@ class HexagonScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        backgroundColor = .black
+        backgroundColor = SKColor(red: 0.6, green: 0.4, blue: 0.15, alpha: 1.0) // Dark brown
         drawHexGrid()
         setupToggleButton()
 
@@ -45,6 +48,12 @@ class HexagonScene: SKScene {
         let dx = hexSize * 3/2
         let dy = hexSize * sqrt(3)
 
+        // Remove old hexes
+        for node in hexNodes {
+            node.removeFromParent()
+        }
+        hexNodes.removeAll()
+
         for row in 0..<rows {
             for col in 0..<cols {
                 let x = CGFloat(col) * dx
@@ -55,18 +64,25 @@ class HexagonScene: SKScene {
                 hex.strokeColor = .white
                 hex.fillColor = .gray
                 hex.lineWidth = 1.5
+                hex.name = "hexagon"
                 addChild(hex)
                 hexNodes.append(hex)
             }
+        }
+
+        // Re-add selected hex last to bring it visually on top
+        if let selected = selectedHex, hexNodes.contains(selected) {
+            selected.removeFromParent()
+            addChild(selected)
         }
     }
 
     func setupToggleButton() {
         toggleButton = SKLabelNode(text: "Pause")
-        toggleButton.fontName = "Helvetica-Bold"
+        toggleButton.fontName = "Helvetica"
         toggleButton.fontSize = 24
-        toggleButton.fontColor = .white
-        toggleButton.position = CGPoint(x: size.width / 2, y: size.height - 150)
+        toggleButton.fontColor = SKColor(red: 0.96, green: 0.89, blue: 0.76, alpha: 1.0) // Beige
+        toggleButton.position = CGPoint(x: size.width / 2, y: size.height - buttonTopOffset)
         toggleButton.name = "toggleButton"
         addChild(toggleButton)
     }
@@ -74,17 +90,55 @@ class HexagonScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        let nodesAtPoint = nodes(at: location)
+        let touchedNodes = nodes(at: location)
 
-        if nodesAtPoint.contains(where: { $0.name == "toggleButton" }) {
+        if touchedNodes.contains(where: { $0.name == "toggleButton" }) {
             isRunning.toggle()
             toggleButton.text = isRunning ? "Pause" : "Resume"
+            return
+        }
+
+        for node in touchedNodes {
+            if let hex = node as? SKShapeNode, hex.name == "hexagon" {
+                toggleHexagonSelection(hex)
+                break
+            }
+        }
+    }
+
+    func toggleHexagonSelection(_ hex: SKShapeNode) {
+        if selectedHex == hex {
+            // Deselect
+            hex.lineWidth = 1.5
+            hex.strokeColor = .white
+            selectedHex = nil
+        } else {
+            // Deselect previous
+            selectedHex?.lineWidth = 1.5
+            selectedHex?.strokeColor = .white
+
+            // Highlight new
+            hex.lineWidth = 5.0
+            hex.strokeColor = .black
+            selectedHex = hex
+
+            // Bring selected to top
+            hex.removeFromParent()
+            addChild(hex)
         }
     }
 
     func updateHexColors() {
         for hex in hexNodes {
             hex.fillColor = .init(hue: CGFloat.random(in: 0...1), saturation: 0.8, brightness: 0.9, alpha: 1.0)
+        }
+
+        // Re-apply highlight styling (in case lineWidth/strokeColor were overridden)
+        if let selected = selectedHex {
+            selected.lineWidth = 5.0
+            selected.strokeColor = .black
+            selected.removeFromParent()
+            addChild(selected)
         }
     }
 
@@ -104,4 +158,3 @@ class HexagonScene: SKScene {
         return path.cgPath
     }
 }
-
