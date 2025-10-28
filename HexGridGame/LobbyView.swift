@@ -25,3 +25,7 @@ struct LobbyView: View {
         }
     }
 }
+
+#Preview {
+    LobbyView()
+}
